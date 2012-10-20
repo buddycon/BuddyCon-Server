@@ -123,8 +123,8 @@ class ScreenController extends Controller
 	 */
 	public function actionDelete($id,$t)
 	{
-        if(!ctype_digit ($id) ) throw new CHttpException(404,'The requested page does not exist.');
         if($t==1){
+            if(!ctype_digit ($id) ) throw new CHttpException(404,'The requested page does not exist.');
             $model=Screen::model()->with('bot')->findByPk($id);
         }else{
             $model=Screen::model()->with('bot')->findByAttributes(array('delete'=>$id));

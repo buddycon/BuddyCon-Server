@@ -23,12 +23,19 @@ class ApiController extends Controller
     }
 
     public static $com;
+    public static $dataArr= array();
+
     public static function binds($post,$db,$bool,$default=1){
         if(isset($_POST[$post])){
             if($bool)
                 ApiController::$com->bindValue(":".$db,$_POST[$post]);
             else
                 ApiController::$com->bindValue(":".$db,$default);
+        }
+    }
+    public static function updateSQL($post,$bool=true){
+        if(isset($_POST[$post]) && $_POST[$post] != "" && $bool){
+            ApiController::$dataArr[$post] = $_POST[$post];
         }
     }
 
@@ -64,65 +71,46 @@ class ApiController extends Controller
                 $bot=$command->queryRow();
                 if(!$bot)$insert =true;
                 else $insert = false;
-                if($insert)
-                    $sql = 'INSERT INTO bot VALUES(null,:user_id,:level,:gold,:xp,:xp_needed,:name,:latestupdate,:wantscreen,:do,:nodes,:running,:lastvisit,:filter,:xph,:timetolevel,:kills,:killsh,:honor,:honorh,:death,:deathh,:bgwin,:bglost)';
-                else
-                    $sql = 'UPDATE bot SET user_id=:user_id,level=:level,gold=:gold,xp=:xp,xp_needed=:xp_needed,name=:name,latestupdate=:latestupdate,wantscreen=:wantscreen,do=:do,nodes=:nodes,running=:running,lastvisit=:lastvisit,filter=:filter,xph=:xph,timetolevel=:timetolevel,kills=:kills,killsh=:killsh,honor=:honor,honorh=:honorh,death=:death,deathh=:deathh,bgwin=:bgwin,bglost=:bglost WHERE id = :id';
-                ApiController::$com=$connection->createCommand($sql);
 
-                if(!$insert) ApiController::$com->bindValue(":id",$bot['id']);
-                ApiController::$com->bindValue(":user_id",$user_id);
-                ApiController::$com->bindValue(":name",$_POST['name']);
-                ApiController::$com->bindValue(":latestupdate",time());
-                ApiController::$com->bindValue(":lastvisit",null);
-                ApiController::$com->bindValue(":filter","");
-                ApiController::$com->bindValue(":wantscreen","");
-                ApiController::$com->bindValue(":do","");
+                ApiController::$com=$connection->createCommand();
+
+                ApiController::$dataArr['user_id'] =$user_id;
+                ApiController::$dataArr['name'] =$_POST['name'];
+                ApiController::$dataArr['latestupdate'] = time();
+                ApiController::$dataArr['lastvisit'] = null;
+                ApiController::$dataArr['wantscreen'] = "";
+                ApiController::$dataArr['do'] = "";
+
+                ApiController::updateSQL("gold");
+                ApiController::updateSQL("xp");
+                ApiController::updateSQL("xp_needed");
+                ApiController::updateSQL("xph");
+                ApiController::updateSQL("timetolevel");
+                ApiController::updateSQL("kills");
+                ApiController::updateSQL("killsh");
+                ApiController::updateSQL("honor");
+                ApiController::updateSQL("honorh");
+                ApiController::updateSQL("death");
+                ApiController::updateSQL("deathh");
+                ApiController::updateSQL("bgwin");
+                ApiController::updateSQL("bglost");
 
 
-                ApiController::$com->bindValue(":gold"       ,0);
-                ApiController::$com->bindValue(":xp",1);
-                ApiController::$com->bindValue(":xp_needed",2);
-                ApiController::$com->bindValue(":xph",0);
-                ApiController::$com->bindValue(":timetolevel",0);
-                ApiController::$com->bindValue(":kills",0);
-                ApiController::$com->bindValue(":killsh",0);
-                ApiController::$com->bindValue(":honor",0);
-                ApiController::$com->bindValue(":honorh",0);
-                ApiController::$com->bindValue(":death",0);
-                ApiController::$com->bindValue(":deathh",0);
-                ApiController::$com->bindValue(":bgwin",0);
-                ApiController::$com->bindValue(":bglost",0);
-
-                if(!isset($_POST{'level'}) || ($_POST{'level'} > 90 || $_POST{'level'} <1))
-                    ApiController::$com->bindValue(":level",1);
-                else
-                    ApiController::$com->bindValue(":level",$_POST['level']);
+                if(isset($_POST{'level'}) && ($_POST{'level'} < 91 && $_POST{'level'} > 0))
+                    ApiController::$dataArr['level'] =$_POST['level'];
 
                 if(isset($_POST{'runningtime'}) && $_POST{'runningtime'}!=""){
-                    ApiController::$com->bindValue(":running",round($_POST['runningtime']));
+                    ApiController::$dataArr['running'] =$_POST['runningtime'];
                 }else
-                    ApiController::$com->bindValue(":running",0);
+                    ApiController::$dataArr['running'] = 0;
 
                 if(isset($_POST{'nodeh'}) && $_POST{'nodeh'}!="{}"){
-                    ApiController::$com->bindValue(":nodes",$_POST['nodeh']);
+                    ApiController::$dataArr['nodes'] =$_POST['nodeh'];
                 }else
-                    ApiController::$com->bindValue(":nodes","{}");
+                    ApiController::$dataArr['nodes'] ="{}";
 
-
-                if(isset($_POST["gold"]))       ApiController::binds("gold","gold",($_POST{'gold'} < PHP_INT_MAX));
-                if(isset($_POST["xp"]))         ApiController::binds("xp","xp",($_POST{'xp'} < 32800000));
-                if(isset($_POST["xp_needed"]))  ApiController::binds("xp_needed","xp_needed",($_POST{'xp_needed'} < 32800000),2);
-                if(isset($_POST["xph"]))        ApiController::binds("xph","xph",($_POST{'xph'} > 0),0);
-                if(isset($_POST["timetolevel"]))ApiController::binds("timetolevel","timetolevel",($_POST{'timetolevel'} > 0),0);
-                if(isset($_POST["kills"]))      ApiController::binds("kills","kills",($_POST{'kills'} > 0),0);
-                if(isset($_POST["killsh"]))     ApiController::binds("killsh","killsh",($_POST{'killsh'} > 0),0);
-                if(isset($_POST["honor"]))      ApiController::binds("honor","honor",($_POST{'honor'} > 0),0);
-                if(isset($_POST["honorh"]))     ApiController::binds("honorh","honorh",($_POST{'honorh'} > 0),0);
-                if(isset($_POST["death"]))      ApiController::binds("death","death",($_POST{'death'} > 0),0);
-                if(isset($_POST["deathh"]))     ApiController::binds("deathh","deathh",($_POST{'deathh'} > 0),0);
-                if(isset($_POST["bgwin"]))      ApiController::binds("bgwin","bgwin",($_POST{'bgwin'} > 0),0);
-                if(isset($_POST["bglost"]))     ApiController::binds("bglost","bglost",($_POST{'bglost'} > 0),0);
+                if($insert) ApiController::$com->insert('bot', ApiController::$dataArr);
+                else  ApiController::$com->update('bot', ApiController::$dataArr, "id=:id", array(':id'=>$bot['id']));
 
                 if(!$insert){
                     if($bot['wantscreen']){
